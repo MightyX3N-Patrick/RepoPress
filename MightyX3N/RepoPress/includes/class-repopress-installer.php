@@ -131,17 +131,36 @@ class RepoPress_Installer {
     }
 
     /**
-     * Check if a plugin is already installed by slug.
+     * Check if a plugin is already installed by slug (case-insensitive).
+     * Checks both folder existence and WP's plugin registry.
      */
     public static function is_installed( $slug ) {
-        return is_dir( WP_PLUGIN_DIR . '/' . $slug );
+        $slug_lower = strtolower( $slug );
+
+        // Check via WP's plugin list (most reliable)
+        foreach ( array_keys( get_plugins() ) as $plugin_file ) {
+            $folder = strtolower( explode( '/', $plugin_file )[0] );
+            if ( $folder === $slug_lower ) return true;
+        }
+
+        // Fallback: direct folder scan
+        foreach ( glob( WP_PLUGIN_DIR . '/*', GLOB_ONLYDIR ) as $dir ) {
+            if ( strtolower( basename( $dir ) ) === $slug_lower ) return true;
+        }
+
+        return false;
     }
 
     /**
-     * Check if a theme is already installed by slug.
+     * Check if a theme is already installed by slug (case-insensitive).
      */
     public static function is_theme_installed( $slug ) {
-        return is_dir( get_theme_root() . '/' . $slug );
+        if ( is_dir( get_theme_root() . '/' . $slug ) ) return true;
+        $slug_lower = strtolower( $slug );
+        foreach ( glob( get_theme_root() . '/*', GLOB_ONLYDIR ) as $dir ) {
+            if ( strtolower( basename( $dir ) ) === $slug_lower ) return true;
+        }
+        return false;
     }
 
     /**
